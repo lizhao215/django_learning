@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<!-- saved from url=(0067)http://python.usyiyi.cn/translate/django_182/ref/models/fields.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>模型字段参考 — Django 1.8.2 中文文档</title>
+    <link rel="stylesheet" href="./模型字段参考 — Django 1.8.2 中文文档_files/jquery-ui.min.css">
+    <link rel="stylesheet" href="./模型字段参考 — Django 1.8.2 中文文档_files/jquery-ui.theme.min.css">
+    <link rel="stylesheet" href="./模型字段参考 — Django 1.8.2 中文文档_files/comparison.css">
+    <link rel="stylesheet" href="./模型字段参考 — Django 1.8.2 中文文档_files/editor.css">
+    <script src="./模型字段参考 — Django 1.8.2 中文文档_files/jquery.min.js.下载"></script>
+    <script src="./模型字段参考 — Django 1.8.2 中文文档_files/jquery-ui.min.js.下载"></script>
+    <script src="./模型字段参考 — Django 1.8.2 中文文档_files/moment.min.js.下载"></script>
+    <script src="./模型字段参考 — Django 1.8.2 中文文档_files/js.cookie.min.js.下载"></script>
+    <script src="./模型字段参考 — Django 1.8.2 中文文档_files/yi-util.js.下载"></script>
+    <script src="./模型字段参考 — Django 1.8.2 中文文档_files/logsignin.js.下载"></script>
+    <script src="./模型字段参考 — Django 1.8.2 中文文档_files/comparison.v2.js.下载"></script>
+    <script src="./模型字段参考 — Django 1.8.2 中文文档_files/editor.v2.js.下载"></script>
+</head>
+<body>
+ 
+    <div id="docs-panel">
+        <div class="panel-v src-panel-v" id="src-panel" style="display: none;">
+            <iframe class="panel-iframe" id="src-iframe" src="./模型字段参考 — Django 1.8.2 中文文档_files/fields.html" data-path="django_182/ref/models/fields.html"> </iframe>
+        </div>
+
+        <div class="panel-v trs-panel-v" id="trs-panel" style="width: 1366px; height: 613px;">
+            <iframe class="panel-iframe" id="trs-iframe" src="./模型字段参考 — Django 1.8.2 中文文档_files/fields(1).html" data-path="django_182/ref/models/fields.html"> </iframe>
+        </div>
+    </div>
+
+    <div id="trs-editor" class="ui-draggable ui-draggable-handle ui-resizable" style="display: none;">
+        <div id="src-text-wrapper">
+            <span id="src-text-title">原文：</span>
+            <span id="src-text">null</span>
+        </div>
+        <div id="trs-text-wrapper">
+          <span id="trs-msg" style="display: none;"></span>
+          <textarea id="trs-text" spellcheck="true" placeholder=""></textarea>
+        </div>
+        <div id="trs-buttons">
+            <a id="home" href="http://python.usyiyi.cn/" target="_blank" class="ui-button-icon-primary ui-icon ui-icon-home" title="主页"></a>
+            
+               <input id="signup" type="button" value="注册">
+               <input id="login" type="button" value="登录">
+            
+
+            <span id="more-buttons" href="#">
+              <input type="button" value="更多  "><span id="trs-arrow"></span>
+            </span>
+
+            <input id="copy-src-text" type="button" value="原文">
+            <input id="initial-trs" type="button" value="原始翻译">
+            <input id="isolate-tags" type="button" value="分离标签">
+            <input id="machine-translate" type="button" value="机器翻译" plain_length="0">
+            <input id="submit-trs" type="submit" value="提交" title="Shift + Enter">
+        </div>
+        <span id="trs-close" title="关闭 (Shift + D)"></span>
+    <div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-w" style="z-index: 90;"></div></div>
+
+    <div id="page-menu-icon" class="ui-draggable ui-draggable-handle"><img src="./模型字段参考 — Django 1.8.2 中文文档_files/ic_menu_black_24dp_1x.png"></div>
+
+    <ul id="page-menu" class="menu ui-menu ui-widget ui-widget-content" role="menu" tabindex="0" style="display: none;">
+        <li id="toggle-trs-editor" class="ui-menu-item"><div id="ui-id-5" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper">打开翻译框 (Shift + D)</div></li>
+        <li class="ui-menu-item"><div aria-haspopup="true" id="ui-id-6" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper"><span class="ui-menu-icon ui-icon ui-icon-caret-1-e"></span>文档信息</div>
+            <ul role="menu" aria-hidden="true" aria-expanded="false" class="ui-menu ui-widget ui-widget-content ui-front" style="display: none;">
+                <li class="ui-menu-item"><div id="ui-id-7" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper"><a href="http://python.usyiyi.cn/v/django_182/ref/models/fields.html" target="_blank">本页词汇表 (<span id="vocabulary_size">2</span>)</a></div></li>
+                <li class="ui-menu-item"><div id="ui-id-8" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper"><a href="http://python.usyiyi.cn/c/django_182/ref/models/fields.html" target="_blank">文档贡献者 (<span id="contributors_size">172</span>)</a></div></li>
+                <li class="ui-menu-item"><div id="ui-id-9" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper"><a href="http://python.usyiyi.cn/account/xx/" target="_blank" id="document-owner">文档拥有者</a></div></li>
+            </ul>
+        </li>
+        <li class="ui-menu-item"><div id="ui-id-10" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper"><a href="http://python.usyiyi.cn/cm/django_182/ref/models/fields.html" target="_blank">文档评论 (<span id="comments_size">74</span>)</a></div></li>
+        <li class="ui-menu-item"><div aria-haspopup="true" id="ui-id-11" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper"><span class="ui-menu-icon ui-icon ui-icon-caret-1-e"></span>中英文对照</div>
+            <ul role="menu" aria-hidden="true" aria-expanded="false" class="ui-menu ui-widget ui-widget-content ui-front" style="display: none;">
+                <li id="vertical" class="ui-menu-item"><div id="ui-id-12" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper">纵向 (Shift + V)</div></li>
+                <li id="horizontal" class="ui-menu-item"><div id="ui-id-13" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper">横向 (Shift + H)</div></li>
+                <li id="comparison" class="ui-menu-item"><div id="ui-id-14" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper">打开/关闭 (Shift + C)</div></li>
+            </ul>
+        </li>
+        <li id="show-dashang" class="ui-menu-item"><div id="ui-id-15" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper">打赏本站</div></li>
+    </ul>
+
+    <ul id="trs-menu" class="menu ui-menu ui-widget ui-widget-content" role="menu" tabindex="0" style="display: none;">
+        <li class="ui-menu-item"><div id="ui-id-3" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper"><a data-href="/h/django_182/ref/models/fields.html" target="_blank" id="history" href="http://python.usyiyi.cn/h/django_182/ref/models/fields.html/663">本句历史 (<span id="history_size">3</span>)</a></div></li>
+        <li id="locate-sentence" class="ui-menu-item"><div id="ui-id-4" tabindex="-1" role="menuitem" class="ui-menu-item-wrapper">定位本句 (Shift + F)</div></li>
+    </ul>
+
+    <div id="href-pop" style="position: relative; top: -100660px; left: -99999px;">
+        <span class="href-translate">
+            <a id="href-pop-link">翻译</a> 该链接对应的语句
+        </span>
+    </div>
+
+    
+
+    
+
+
+
+
+<div tabindex="-1" role="dialog" class="ui-dialog ui-corner-all ui-widget ui-widget-content ui-front ui-dialog-buttons ui-draggable ui-resizable" aria-describedby="dgLogin" aria-labelledby="ui-id-1" style="display: none; position: absolute;"><div class="ui-dialog-titlebar ui-corner-all ui-widget-header ui-helper-clearfix ui-draggable-handle"><span id="ui-id-1" class="ui-dialog-title">用户登录</span><button type="button" class="ui-button ui-corner-all ui-widget ui-button-icon-only ui-dialog-titlebar-close" title="Close"><span class="ui-button-icon ui-icon ui-icon-closethick"></span><span class="ui-button-icon-space"> </span>Close</button></div><div id="dgLogin" class="dlg ui-dialog-content ui-widget-content">
+    <p class="help-text">输入用户名、密码：</p>
+    <form>
+        <fieldset>
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" name="username" maxlength="256" placeholder="用户名/邮箱" class="text ui-widget-content ui-corner-all">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" name="password" maxlength="30" placeholder="密码" class="text ui-widget-content ui-corner-all">
+            </div>
+            <div class="form-group">
+                <label>
+                  <input type="checkbox" checked="checked" name="remember">下次自动登录
+                </label>
+                <span class="forget-password"><a href="http://python.usyiyi.cn/accounts/password/reset/">忘记密码</a></span>
+            </div>
+        </fieldset>
+    </form>
+</div><div class="ui-dialog-buttonpane ui-widget-content ui-helper-clearfix"><div class="ui-dialog-buttonset"><button type="button" class="ui-button ui-corner-all ui-widget">登录</button><button type="button" class="ui-button ui-corner-all ui-widget">关闭</button></div></div><div class="ui-resizable-handle ui-resizable-n" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-s" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-w" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-sw" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-ne" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-nw" style="z-index: 90;"></div></div><div tabindex="-1" role="dialog" class="ui-dialog ui-corner-all ui-widget ui-widget-content ui-front ui-dialog-buttons ui-draggable ui-resizable" aria-describedby="dgSignup" aria-labelledby="ui-id-2" style="display: none; position: absolute;"><div class="ui-dialog-titlebar ui-corner-all ui-widget-header ui-helper-clearfix ui-draggable-handle"><span id="ui-id-2" class="ui-dialog-title">用户注册</span><button type="button" class="ui-button ui-corner-all ui-widget ui-button-icon-only ui-dialog-titlebar-close" title="Close"><span class="ui-button-icon ui-icon ui-icon-closethick"></span><span class="ui-button-icon-space"> </span>Close</button></div><div id="dgSignup" class="dlg ui-dialog-content ui-widget-content">
+    <p class="help-text">注册用户可以上传自己的文档、查询自己的翻译历史等：</p>
+    <form>
+        <fieldset>
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" name="username" maxlength="20" placeholder="" class="text ui-widget-content ui-corner-all">
+            </div>
+            <div class="form-group">
+                <label for="password1">密码</label>
+                <input type="password" name="password1" maxlength="30" placeholder="" class="text ui-widget-content ui-corner-all">
+            </div>
+            <div class="form-group">
+                <label for="password2">确认密码</label>
+                <input type="password" name="password2" maxlength="30" placeholder="" class="text ui-widget-content ui-corner-all">
+            </div>
+            <div class="form-group">
+                <label for="email">邮箱</label>
+                <input type="email" name="email" maxlength="30" placeholder="可选" class="text ui-widget-content ui-corner-all">
+            </div>
+        </fieldset>
+    </form>
+</div><div class="ui-dialog-buttonpane ui-widget-content ui-helper-clearfix"><div class="ui-dialog-buttonset"><button type="button" class="ui-button ui-corner-all ui-widget">注册</button><button type="button" class="ui-button ui-corner-all ui-widget">关闭</button></div></div><div class="ui-resizable-handle ui-resizable-n" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-s" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-w" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-sw" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-ne" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-nw" style="z-index: 90;"></div></div><div tabindex="-1" role="dialog" class="ui-dialog ui-corner-all ui-widget ui-widget-content ui-front ui-dialog-buttons ui-draggable ui-resizable" aria-describedby="dashang" aria-labelledby="ui-id-16" style="display: none; position: absolute;"><div class="ui-dialog-titlebar ui-corner-all ui-widget-header ui-helper-clearfix ui-draggable-handle"><span id="ui-id-16" class="ui-dialog-title">打赏</span><button type="button" class="ui-button ui-corner-all ui-widget ui-button-icon-only ui-dialog-titlebar-close" title="Close"><span class="ui-button-icon ui-icon ui-icon-closethick"></span><span class="ui-button-icon-space"> </span>Close</button></div><div id="dashang" class="dlg ui-dialog-content ui-widget-content">
+        <p class="help-text" id="dashang-string"></p>
+        <div class="modal-body" style="text-align: center;">
+            <span>微信</span>
+            <img src="./模型字段参考 — Django 1.8.2 中文文档_files/wx.png" style="width: 120px; vertical-align: middle;">
+            <span style="margin-left: 50px; ">支付宝</span>
+            <img src="./模型字段参考 — Django 1.8.2 中文文档_files/zfb.png" style="width: 120px; vertical-align: middle;">
+        </div>
+    </div><div class="ui-dialog-buttonpane ui-widget-content ui-helper-clearfix"><div class="ui-dialog-buttonset"><button type="button" class="ui-button ui-corner-all ui-widget">关闭</button></div></div><div class="ui-resizable-handle ui-resizable-n" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-s" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-w" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-sw" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-ne" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-nw" style="z-index: 90;"></div></div></body></html>

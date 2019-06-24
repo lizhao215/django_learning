@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block main %}
+    <div class="detail-body" goodsid="25">
+        <!-- 面包屑 -->
+        <div class="bread">
+            <ul class="bread-content">
+                <li class="bread-item">
+                    <a href="http://127.0.0.1:8000/">首页</a>&gt;
+                </li>
+
+                <li class="bread-item">
+                    <a href="/?category={{ good.categoryid.id }}">{{ good.categoryid.cname }}</a>&gt;
+                </li>
+
+                <li class="bread-item">
+                    <a href="javascript:void(0);">{{ good.gname }}</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- detail-content -->
+        <div class="detail-content">
+            <div class="detail-con-left">
+                <img id="rightimg" src="{{ MEDIA_URL }}{{ good.img }}">
+            </div>
+            <div class="detail-con-right">
+                <h3>{{ good.gdesc }}</h3>
+                <div class="price">
+                    <i>￥</i>
+                    <p>{{ good.gprice }}</p>
+                    <s>￥{{ good.goldprice }}</s>
+                </div>
+
+                <div class="line"></div>
+                <div class="color">
+                    <p class="p-item">颜色：</p>
+                    <ul class="MinImgList">
+                    {% for color in good.colors %}
+                            <li class="MinImg {% if  forloop.first%} active{% endif %}" colorId ={{  color.id}} >
+                                <img src="{{ MEDIA_URL }}{{ color.value }}" width="30px" height="30px">
+                            </li>
+                    {% endfor %}
+
+                    </ul>
+                </div>
+                <div class="size">
+                    <p class="p-item">
+                        尺码：
+                    </p>
+                    <ul class="size-list">
+                        {% for size in good.sizes %}
+                            <li sizeId = {{ size.id }} class="size-item {% if  forloop.first%} active{% endif %}" >{{ size.value }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="num">
+                    <p class="p-item">
+                        数量：
+                    </p>
+                    <div class="jian">-</div>
+                    <input type="number" name="" value="1">
+                    <div class="jia">+</div>
+                </div>
+              <form action="/cart/" method="post">
+                    <input name="colorid"  hidden>
+                    <input name="goodsid"  hidden>
+                    <input name="sizeid"  hidden>
+                    <input name="count"  hidden>
+                    {% csrf_token %}
+                    <button class="male"  onclick="goCart()">单独购买</button>
+              </form>
+            </div>
+         <div class="detail-con-nav">
+        <ul class="detail-nav">
+            <li class="active nav-item "><a href="#">商品详情</a></li>
+            <li class="nav-item"><a href="#">物流与售后</a></li>
+            <li class="nav-item"><a href="#">消费保障</a></li>
+            <li class="nav-item"><a href="#">手机购买</a></li>
+        </ul>
+    </div>
+    <div class="sub-nav">
+        <ul class="subNav">
+            <li><a href="#">整体款式</a></li>
+            <li><a href="#">模特实拍</a></li>
+            <li><a href="#">细节做工</a></li>
+        </ul>
+    </div>
+    <div class="zhanshi">
+        <div class="zhanshi-model">
+            <p>参数规格</p>
+            <div class="line"></div>
+            <img src="{% static 'img/详情页_03.png' %}" alt="">
+        </div>
+        <div class="zhanshi-model">
+            <p>整体款式</p>
+            <div class="line"></div>
+            <img src="{% static 'img/详情页_06.png' %}" alt="">
+        </div>
+        <div class="zhanshi-model">
+            <p>模特实拍</p>
+            <div class="line"></div>
+
+{% for goods_deatil in goods_details  %}
+<img src="{{ MEDIA_URL }}{{ goods_deatil.value }}" alt="">
+{% endfor %}
+        </div>
+    </div>
+        </div>
+    </div>
+
+
+{#    推荐商品#}
+
+    <div class="goods-model" style="margin-right: -18px;text-align: center">
+        <img src="{% static 'img/recommend.png' %}" style="position: relative;left: -10px;top: 10px">
+
+        <div class="goods-content">
+
+               {% for r_good in  recomand_goods %}
+                <div class="good">
+                    <a href="http://127.0.0.1:8000/details?goodsId={{ r_good.id }}">
+                        <img src="{{ MEDIA_URL }}{{ r_good.img }}" width="285px" height="285px">
+                        <p class="name">{{ r_good.gname }}</p>
+                        <div class="price">
+                            <i>￥</i>
+                            <p class="big">{{  r_good.gprice}}</p>
+                            <s>￥{{ r_good.goldprice }}</s>
+                        </div>
+                        <div class="sale">
+                            特卖
+                        </div>
+                    </a>
+                </div>
+               {% endfor %}
+
+        </div>
+    </div>
+{% endblock main %}
+{% block footer %}
+    <script>
+    $('.MinImg').click(function () {
+        $('.MinImg').removeClass('active')
+        $(this).addClass('active')
+        $('#rightimg').attr('src',$(this).children('img').attr('src'))
+    })
+    $('.size-item').click(function () {
+         $('.size-item').removeClass('active')
+        $(this).addClass('active')
+    })
+    $('.jian').click(function () {
+
+       num_text_view = $('.num').children('input[type="number"]')
+       val=$(num_text_view).val()
+        if(val <=1)return
+        $(num_text_view).val(val-1)
+    })
+    $('.jia').click(function () {
+          <!--发给服务器问一下这个商品(商品+颜色+尺寸)还有没有货-->
+        num_text_view = $('.num').children('input[type="number"]')
+        val=eval($(num_text_view).val())
+        if (val>=60)return
+         $(num_text_view).val(val+1)
+
+    })
+    function goCart() {
+        $('form').children('input[name="colorid"]').val($('.MinImg.active').attr('colorid'))
+        $('form').children('input[name="sizeid"]').val($('.size-item.active').attr('sizeid'))
+        $('form').children('input[name="count"]').val($('.num').children('input[type="number"]').val())
+        $('form').children('input[name="goodsid"]').val({{ good.id }})
+{#        alert(  {{ good.id }}+","+$('.MinImg.active').attr('colorid')+","+$('.size-item.active').attr('sizeid')+","+ $('.num').children('input[type="number"]').val())#}
+    }
+    </script>
+{% endblock footer %}

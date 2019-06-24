@@ -1,0 +1,40 @@
+[group:djangos]
+programs=django-8000,django-8001,django-8002,django-8003
+
+[program:django-8000]
+command=/root/TEST1/bin/python2.7 /root/jiukuaijiy/manage.py runserver 0.0.0.0:8000
+directory=/root/jiukuaijiy
+user=root
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/root/jiukuaijiy/django.log
+loglevel=info
+
+[program:django-8001]
+command=/root/TEST1/bin/python2.7 /root/jiukuaijiy/manage.py runserver 0.0.0.0:8001
+directory=/root/jiukuaijiy
+user=root
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/root/jiukuaijiy/django.log
+loglevel=info
+
+
+[program:django-8002]
+command=/root/TEST1/bin/python2.7 /root/jiukuaijiy/manage.py runserver 0.0.0.0:8002
+directory=/root/jiukuaijiy
+user=root
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/root/jiukuaijiy/django.log
+loglevel=info
+
+
+[program:django-8003]
+command=/root/TEST1/bin/python2.7 /root/jiukuaijiy/manage.py runserver 0.0.0.0:8003
+directory=/root/jiukuaijiy
+user=root
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/root/jiukuaijiy/django.log
+loglevel=info

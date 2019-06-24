@@ -1,0 +1,215 @@
+#trs-editor{
+    position: fixed;
+    background-color: #ffffff;
+    border: solid 1px #666;
+    width: 500px;
+    font-family: Verdana,Arial,sans-serif;
+    font-size: small;
+    padding: 6px 6px 3px 6px;
+    overflow: hidden;
+    z-index: 92;
+}
+
+#trs-text-wrapper{
+    position: relative;
+    margin-top: 5px;
+}
+
+#trs-text-wrapper textarea.has-error{
+  border: solid 1px #a94442
+}
+
+#trs-text-wrapper span.has-error{
+  color: #a94442;
+}
+
+#trs-text-wrapper span.has-success{
+  color: #4CAF50;
+}
+
+#trs-text {
+    overflow: auto;
+    word-wrap: break-word;
+    resize: none;
+    height: 50px;
+    padding: 5px;
+}
+
+#trs-msg {
+  display: none;
+  position: absolute;
+  right: 2px;
+  bottom: 5px;
+  color: #ff9F70;
+  background-color: #dddddd;
+  padding: 2px;
+}
+
+#src-text-title{
+    font-size: 13px;
+    font-weight: bold;
+    color: #0470c3;
+}
+
+#trs-buttons{
+    text-align: right;
+    padding-top: 2px;
+}
+
+#home,#user{
+    float: left;
+    color: #3f529c;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 4px 2px 0px 2px;;
+    text-decoration: blink;
+}
+
+#login,#signup{
+    float: left;
+    color: #3f529c;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    background-color: #fff;
+    padding: 4px 2px 0px 2px;
+}
+
+#trs-arrow {
+    margin-left: -18px;
+    background-image: url(/common/ui-icons_444444_256x240.png);
+    background-position: -64px -16px;
+    width: 15px;
+    height: 15px;
+    display: inline-block;
+}
+
+#trs-close {
+    background-image: url(/common/ui-icons_444444_256x240.png);
+    background-position: -80px -128px;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    top: 0px;
+    right: 0px;
+    position: absolute;
+}
+#trs-close:hover {
+    background-color: #ddd;
+}
+
+.menu {
+    font-family: Verdana, Arial, sans-serif;
+    font-size: small;
+    width: 170px;
+    display: none;
+    z-index: 94;
+}
+
+.menu a {
+    text-decoration: none;
+    display: block;
+}
+
+.menu .ui-menu-item {
+    list-style-image: none;
+    min-width: 140px;
+}
+
+#trs-editor .ui-resizable-e {
+    right: -2px;
+}
+
+#trs-editor .ui-resizable-w {
+    left: -2px;
+}
+
+#page-menu-icon {
+    position: fixed;
+    bottom: 170px;
+    right: 25px;
+    border: solid 1px #777;
+    z-index: 93;
+    width: 24px;
+    height: 24px;
+}
+
+#href-pop {
+    border-radius: 2px;
+    background-color: white;
+    border: 1px solid;
+    border-color: #b2b2b2;
+    padding: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    font-size: smaller;
+    display: inline-block;
+    z-index: 91;
+}
+
+#href-pop a{
+    color: #3f529c;
+    cursor: pointer;
+    text-decoration: blink;
+}
+
+.ui-widget-overlay {
+    opacity: .5;
+}
+
+.ui-dialog{
+  font-size: small;
+  padding: 0;
+}
+
+.ui-dialog .ui-dialog-titlebar {
+  border: none;
+}
+.ui-dialog .ui-dialog-buttonpane {
+  padding: 0;
+}
+
+.ui-dialog .ui-dialog-titlebar {
+    background: #bce6ec;
+    border-bottom: 1px solid #e5e5e5;
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+}
+.ui-dialog .ui-dialog-titlebar-close{
+    background: #bce6ec;
+    border: none;
+}
+
+.dlg label{
+  font-weight: bold;
+}
+.dlg input.text, .dlg textarea.text{
+  margin-bottom:12px;
+  width:95%;
+  padding: 6px;
+}
+.dlg fieldset{
+  padding:0;
+  border:0;
+}
+
+#dialog-combine-sentences .sentence{
+  margin-bottom: 10px;
+}
+
+#dialog-combine-sentences textarea.text {
+  height: 100px;
+}
+
+/* logsignin */
+#dgLogin .forget-password {
+    margin-left: 200px;
+}
+#dgLogin .has-error,#dgSignup .has-error {
+    color: #a94442;
+    font-weight: bold
+}
+
+input:-ms-input-placeholder {
+    color: #999;
+}

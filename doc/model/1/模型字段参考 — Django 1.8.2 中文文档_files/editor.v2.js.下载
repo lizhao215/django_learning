@@ -1,0 +1,881 @@
+$(function() {
+    var trsIframe = document.getElementById("trs-iframe");
+    var srcIframe = document.getElementById("src-iframe");
+    var trsDocument, srcDocument, trsWindow, srcWindow;
+    var trsText = $("#trs-text");
+    var trsTextWrapper = $("#trs-text-wrapper");
+    var trsEditor = $("#trs-editor" );
+    var trsMenu = $("#trs-menu");
+    var pageMenu = $("#page-menu");
+    var moreButtons = $("#more-buttons");
+    var submitTrs = $("#submit-trs");
+    var srcText = $("#src-text");
+    var trsMsg = $("#trs-msg");
+    var copySrcText = $("#copy-src-text");
+    var machineTranslate = $("#machine-translate");
+    var pageMenuIcon = $("#page-menu-icon");
+    var trsClose = $("#trs-close");
+    var history = $("#history");
+    var vocabularySize = $("#vocabulary_size");
+    var commentsSize = $("#comments_size");
+    var contributorsSize = $("#contributors_size");
+    var historySize = $("#history_size");
+    var isolateTags = $("#isolate-tags");
+    var initialTrs = $("#initial-trs");
+    var hrefPop = $("#href-pop");
+    var hrefPopLink = $("#href-pop-link");
+    var documentOwner = $("#document-owner");
+    var toggleTrsEditorMenu = $("#toggle-trs-editor>div");
+
+    var hrefShownTimeoutID, hrefHiddenTimeoutID, highlightSelectedTimeoutID;
+    var iFramePath = trsIframe.getAttribute('data-path');
+    var vocabulary = {};
+    var hoverStyle = {"background-color": "rgb(201, 215, 241)", "color": "rgb(0, 0, 0)"};
+    var clickStyle = {"background-color": "rgb(255, 255, 176)", "color": "rgb(0, 0, 0)"};
+    var selectedSid;
+    var elemCss = {};
+    var historyHref = history.attr("data-href");
+    var hiddenOffset = {top: -99999, left: -99999};
+
+    if (!String.prototype.startsWith) {
+        String.prototype.startsWith = function(searchString, position){
+          return this.substr(position || 0, searchString.length) === searchString;
+      };
+    }
+    
+    function getElementByIdOrClass(doc, sid) {
+        var elem = doc.getElementById(sid);
+        if(elem) {
+            return elem;
+        } else {
+            var elems = doc.getElementsByClassName(sid);
+            if(elems) {
+                return elems[0];
+            } else {
+                return null;
+            }
+        }
+    }
+
+    function getElementSid(elem) {
+        var sid = elem.attr("id");
+        if(sid && sid.startsWith("yiyi-")) {
+            return sid;
+        } else {
+            var classes = elem.attr("class");
+             if(classes) {
+                 classes = classes.split(" ");
+                 for(var i = 0; i < classes.length; i++) {
+                     if(classes[i].match(/^yiyi-\d+/) !== null) {
+                         return classes[i];
+                     }
+                 }
+             }
+             return null;
+        }
+    }
+
+    function getElementStyle(elem) {
+        elemCss = {'background-color': '', 'color': ''};
+        var style = elem.attr("style");
+        if(style) {
+            style = style.split(';');
+            for(var i = 0; i < style.length; i++) {
+                var item = style[i].trim().split(':');
+                if(item.length == 2) {
+                    if(item[0].toLowerCase() == 'background-color') {
+                        elemCss['background-color'] = item[1].trim();
+                    } else if (item[0].toLowerCase() == 'color') {
+                        elemCss['color'] = item[1].trim();
+                    }
+                }
+            }
+        }
+        if(elemCss['background-color'] == hoverStyle['background-color'] &&
+                elemCss['color'] == hoverStyle['color'] ||
+                elemCss['background-color'] == clickStyle['background-color'] &&
+                elemCss['color'] == clickStyle['color']) {
+            elemCss = {'background-color': '', 'color': ''};
+        }
+    }
+
+    trsEditor.draggable({
+        cancel: "input,textarea,button,select,option,#src-text",
+        start: function () {
+            trsMenu.hide();
+        },
+        stop: function () {
+            Cookies.set("trsEditorOffset", trsEditor.offset());
+        }
+    });
+    
+    trsText.click(function(){
+        trsMsg.removeClass("has-error").removeClass("has-success").hide();
+        trsText.removeClass("has-error");
+        submitTrs.attr("disabled", false);
+    });
+    
+    trsEditor.resizable({
+        handles: "e, w",
+        start: function () {
+            trsMenu.hide();
+        },
+        resize: function () {
+            trsText.outerWidth(trsTextWrapper.width());
+        },
+        stop: function () {
+            Cookies.set("trsEditorWidth", trsEditor.width());
+        }
+    });
+
+    $(trsIframe).load(function () {
+        trsDocument = trsIframe.contentDocument;
+        trsWindow = trsIframe.contentWindow;
+        document.title = trsDocument.title;
+        trsWindow.location.hash = window.location.hash;
+
+        if(Cookies.get("trsEditorHidden") === undefined) {
+            trsEditor.show().offset({
+                top: $(window).height() - trsEditor.outerHeight() - 40,
+                left: $(window).width() - trsEditor.outerWidth() - 25
+            });
+            trsText.outerWidth(trsTextWrapper.width());
+            Cookies.set("trsEditorHidden", false);
+            Cookies.set("trsEditorOffset", trsEditor.offset());
+            Cookies.set(trsEditor.width());
+        } else if (Cookies.get("trsEditorHidden") === "false") {
+            trsEditor.show().offset(Cookies.getJSON("trsEditorOffset"));
+            trsEditor.width(Cookies.get("trsEditorWidth"));
+            trsText.outerWidth(trsTextWrapper.width());
+        } else {
+            toggleTrsEditorMenu.text("打开翻译框 (Shift + D)");
+            trsEditor.hide();
+        }
+
+        $(trsDocument).delegate(".yiyi-st", "click", function() {
+            var sid = getElementSid($(this));
+            selectedSid = sid;
+            machineTranslate.attr("plain_length", 0);
+            var trsElem = $(getElementByIdOrClass(trsDocument, sid));
+            var srcElem = $(getElementByIdOrClass(srcDocument, sid));
+            var srcHtml = '';
+            var trsHtml = '';
+            if(srcElem.prop("tagName").toLowerCase() === 'pre'||
+                    trsElem.parents('pre').length > 0) {
+                srcHtml = srcElem.html();
+                trsHtml = trsElem.html();
+            } else {
+                srcHtml = srcElem.html().replace(/\s+/g, ' ');
+                trsHtml = trsElem.html().replace(/\s+/g, ' ');
+
+            }
+            srcText.text(yiutil.normalizeOriginalTag(srcHtml));
+            trsText.removeClass("has-error").val(yiutil.normalizeTranslationTag(trsHtml));
+            trsMsg.hide().removeClass("has-error");
+            history.attr("href", historyHref + "/" + sid.substr(5));
+            getHistory(sid);
+            trsMenu.hide();
+        });
+
+        $(trsWindow).click(function () {
+            trsMenu.hide();
+            pageMenu.hide();
+        });
+
+        handleHrefHover();
+        handleTrsHrefClick();
+        registerKeys();
+        getVocabulary();
+        getComments();
+        getContributors();
+        getDocumentOwner();
+        absPathToRelative(trsDocument);
+    });
+
+    $(srcIframe).load(function () {
+        srcDocument = srcIframe.contentDocument;
+        srcWindow = srcIframe.contentWindow;
+        srcWindow.location.hash = window.location.hash;
+
+        $(srcDocument).delegate(".yiyi-st", "click", function() {
+            var sid = getElementSid($(this));
+            selectedSid = sid;
+            machineTranslate.attr("plain_length", 0);
+            var trsElem = $(getElementByIdOrClass(trsDocument, sid));
+            var srcElem = $(getElementByIdOrClass(srcDocument, sid));
+            var srcHtml = '';
+            var trsHtml = '';
+            if(srcElem.prop("tagName").toLowerCase() === 'pre'|| trsElem.parents('pre').length > 0) {
+                srcHtml = srcElem.html();
+                trsHtml = trsElem.html();
+            } else {
+                srcHtml = srcElem.html().replace(/\s+/g, ' ');
+                trsHtml = trsElem.html().replace(/\s+/g, ' ');
+
+            }
+            srcText.text(yiutil.normalizeOriginalTag(srcHtml));
+            trsText.removeClass("has-error").val(yiutil.normalizeTranslationTag(trsHtml));
+            trsMsg.hide().removeClass("has-error");
+            history.attr("href", historyHref + "/" + sid.substr(5));
+            getHistory(sid);
+            trsMenu.hide();
+        });
+
+        $(srcWindow).click(function () {
+            trsMenu.hide();
+            pageMenu.hide();
+        });
+
+        handleSrcHrefClick();
+        absPathToRelative(srcDocument);
+    });
+
+    trsEditor.hover(
+        function(){
+            var trsElem = getElementByIdOrClass(trsDocument, selectedSid);
+            var srcElem = getElementByIdOrClass(srcDocument, selectedSid);
+            if(trsElem && srcElem) {
+                // here, the timeout is only for fix firefox bug when mouse move from hover to trsEditor without mouse out
+                highlightSelectedTimeoutID = setTimeout(function () {
+                    trsElem = $(trsElem);
+                    srcElem = $(srcElem);
+                    getElementStyle(trsElem);
+                    srcElem.css(clickStyle);
+                    trsElem.css(clickStyle);
+                }, 200)
+            }
+        },
+        function () {
+            var trsElem = getElementByIdOrClass(trsDocument, selectedSid);
+            var srcElem = getElementByIdOrClass(srcDocument, selectedSid);
+            if(trsElem && srcElem) {
+                clearTimeout(highlightSelectedTimeoutID);
+                trsElem = $(trsElem);
+                srcElem = $(srcElem);
+                srcElem.css(elemCss);
+                trsElem.css(elemCss);
+            }
+        }
+    );
+
+    trsMenu.menu({
+        select: function( event, ui ) {
+            var id = ui.item.attr("id");
+            switch (id){
+                case "locate-sentence":
+                    locateSentence();
+                    break;
+                default:
+                    break;
+            }
+            trsMenu.menu("collapseAll", null, true).hide();
+        }
+    });
+
+    pageMenu.menu({
+        select: function( event, ui ) {
+            var id = ui.item.attr("id");
+            switch (id){
+                case "toggle-trs-editor":
+                    toggleTrsEditor();
+                    break;
+                case "show-dashang":
+                    $("#dashang-string").text(getRandomDashangStrings());
+                    daShangDlg.dialog("open");
+                    break;
+                default:
+                    break;
+            }
+            pageMenu.menu("collapseAll", null, true).hide();
+        }
+    });
+
+    moreButtons.click(function () {
+        pageMenu.hide();
+        var menuHeight = trsMenu.outerHeight(), menuWidth = trsMenu.outerWidth();
+        var btnHeight = moreButtons.outerHeight(), btnWidth = moreButtons.outerWidth();
+        var offset = $(this).offset();
+        offset.top += btnHeight;
+        if(offset.top + menuHeight > $(window).height()) {
+            offset.top = offset.top - btnHeight - menuHeight;
+        }
+        if(offset.left + menuWidth > $(window).width()) {
+            offset.left = offset.left + btnWidth - menuWidth;
+        }
+        trsMenu.toggle();
+        trsMenu.offset(offset);
+        return false;
+    });
+
+    trsEditor.click(function () {
+        trsMenu.hide();
+        pageMenu.hide();
+    });
+
+    copySrcText.click(function(){
+        if(selectedSid) {
+            var srcElem = $(getElementByIdOrClass(srcDocument, selectedSid));
+            var srcHtml = '';
+            if(srcElem.prop("tagName").toLowerCase() === 'pre'||
+                srcElem.parents('pre').length > 0) {
+                srcHtml = srcElem.html();
+            } else {
+                srcHtml = srcElem.html().replace(/\s+/g, ' ');
+            }
+            var src = yiutil.normalizeOriginalTag(srcHtml);
+            srcText.text(src);
+            trsText.removeClass("has-error").val(src);
+            machineTranslate.attr("plain_length", 0);
+        }
+        trsMsg.hide();
+    });
+
+    function submitTranslation() {
+        submitTrs.attr("disabled", true);
+        if(!selectedSid || !selectedSid.startsWith("yiyi-")) {
+            trsMsg.show().removeClass("has-success").addClass("has-error").text('未选择语句');
+            trsText.addClass("has-error");
+            return false;
+        }
+        if(!yiutil.validateHTML(trsText.val())){
+            trsMsg.show().removeClass("has-success").addClass("has-error").text('译文含有不正确的标签');
+            trsText.addClass("has-error");
+            return false;
+        }
+        trsMsg.show().removeClass("has-success").removeClass("has-error").text('正在提交翻译...');
+        $.ajax({
+            type: "POST",
+            dataType: 'json',
+            url: "/translation/" + iFramePath  + "/" + selectedSid.substr(5),
+            data: {"translation": yiutil.recoverTag(trsText.val())},
+                success: function(data) {
+                    $(getElementByIdOrClass(trsDocument, selectedSid)).html(data[0].trans_text);
+                    trsMsg.show().removeClass("has-error").addClass("has-success").text('译文提交成功');
+                    trsText.removeClass("has-error");
+                    submitTrs.attr("disabled", false);
+                },
+            error: function(jqXHR) {
+                var err = $.parseJSON(jqXHR.responseText);
+                var msg;
+                for (var key in err) {
+                    msg = err[key][0];
+                }
+                trsMsg.show().removeClass("has-success").addClass("has-error").text(msg);
+                trsText.addClass("has-error");
+            }
+        })
+    }
+    submitTrs.click(function(){
+        submitTranslation();
+    });
+
+    function getVocabulary() {
+        $.ajax({
+            type: "GET",
+            url: "/vocabulary/" + iFramePath,
+            dataType: "json",
+            cache: false,
+            success: function (data) {
+                vocabulary = data['vocabulary'];
+                vocabularySize.text(vocabulary.length);
+            },
+            error: function (jqXHR) {
+            }
+        });
+    }
+    
+    function getComments() {
+        $.ajax({
+            type: "GET",
+            url: "/comments/" + iFramePath,
+            dataType: "json",
+            cache: false,
+            success: function (data) {
+                commentsSize.text(data['comments'].length);
+            },
+            error: function (jqXHR) {
+            }
+        });
+    }
+
+    function getContributors() {
+        $.ajax({
+            type: "GET",
+            url: "/document_contributors/" + iFramePath,
+            dataType: "json",
+            cache: false,
+            success: function (data) {
+                contributorsSize.text(data['contributors'].length);
+            },
+            error: function (jqXHR) {
+            }
+        });
+    }
+
+    function getHistory(sid) {
+        if(!sid || !sid.startsWith("yiyi-")) {
+            historySize.text(0);
+            return;
+        }
+        $.ajax({
+            type: "GET",
+            url: "/translation/" + iFramePath + '/' + sid.substr(5),
+            dataType: "json",
+            cache: false,
+            success: function(data) {
+                historySize.text(data.length);
+            },
+            error: function(jqXHR) {
+            }
+        });
+    }
+
+    function getDocumentOwner() {
+        $.ajax({
+            type: "GET",
+            url: "/document_owner/" + iFramePath,
+            dataType: "json",
+            cache: false,
+            success: function(data) {
+                documentOwner.attr("href", '/account/' + data.owner + '/');
+            },
+            error: function(jqXHR) {
+            }
+        });
+    }
+
+    function translate(){
+        trsText.val("");
+        if(!selectedSid || !selectedSid.startsWith("yiyi-")) {
+            trsMsg.show().removeClass("has-success").addClass("has-error").text('未选择语句');
+            trsText.addClass("has-error");
+            return false;
+        }
+        trsMsg.show().removeClass("has-success").removeClass("has-error").text('正在获取机器翻译...');
+        var plainLength = machineTranslate.attr("plain_length");
+        var src = "";
+        var tags = "";
+        if(plainLength > 0) {
+            src = srcText.text().substr(0, plainLength);
+            tags = srcText.text().substr(plainLength);
+        } else {
+            src = srcText.text();
+        }
+        var srcTxtArray = src.split(' ');
+        for(var i = 0; i < srcTxtArray.length; i++){
+            for (var j = 0; j < vocabulary.length; j++) {
+                var punctuation_split = srcTxtArray[i].split(/([.,:?])$/);
+                var stem = punctuation_split[0];
+                var post = punctuation_split.slice(1).join("");
+                var pre_tag_split = stem.split(/(<t\d+>)/g);
+                var pre = pre_tag_split.slice(0, -1).join('');
+                stem = pre_tag_split.slice(-1)[0];
+                var post_tag_split = stem.split(/(<\/t\d+>)/g);
+                stem = post_tag_split[0];
+                post = post_tag_split.slice(1).join('') + post;
+
+                if (vocabulary[j].case_sensitive && stem == vocabulary[j].orig_term) {
+                        srcTxtArray[i] = pre + vocabulary[j].trans_term + post;
+                        break;
+                } else if (stem.toLowerCase() == vocabulary[j].orig_term.toLowerCase()) {
+                        srcTxtArray[i] = pre + vocabulary[j].trans_term + post;
+                        break;
+                }
+            }
+        }
+        var url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=" +
+                encodeURI(srcTxtArray.join(' '));
+        $.ajax({
+            method: "GET",
+            dataType: 'text',
+            url: url,
+            success: function(data, textStatus, jqXHR ){
+                var translation = $.parseJSON(data.replace(/(,)(?=,)/g, '$1null'));
+                var trans_text = '';
+                for(var i = 0; i < translation[0].length; i ++) {
+                    trans_text += translation[0][i][0].replace(/<\/\s(t\d+)>/g, '</$1>').replace(/(<t\d+>)\s/g, '$1').replace(/\s(<\/t\d+>)/g, '$1');
+                }
+                trans_text = trans_text.replace(/;/g, '；').replace(/（）/g, '()');
+                if(plainLength > 0) {
+                    trans_text += tags;
+                }
+                trsText.val(trans_text);
+                trsMsg.show().removeClass("has-error").addClass("has-success").text('获取机器翻译成功');
+            },
+            error: function(jqXHR, textStatus, errorThrown){
+                trsMsg.show().removeClass("has-success").addClass("has-error").text('获取机器翻译失败');
+            }
+        });
+    }
+
+    machineTranslate.click(function () {
+        translate();
+    });
+
+    trsClose.click(function () {
+        toggleTrsEditor();
+        pageMenuIcon.fadeOut().fadeIn();
+    });
+
+    pageMenuIcon.draggable({
+        start: function () {
+            pageMenu.hide();
+        }
+    });
+
+    pageMenuIcon.click(function () {
+        trsMenu.hide();
+        var menuHeight = pageMenu.outerHeight(), menuWidth = pageMenu.outerWidth();
+        var iconHeight = pageMenuIcon.outerHeight(), iconWidth = pageMenuIcon.outerWidth();
+        var offset = $(this).offset();
+        offset.top += iconHeight;
+        if(offset.top + menuHeight > $(window).height()) {
+            offset.top = offset.top - iconHeight - menuHeight;
+        }
+        if(offset.left + menuWidth > $(window).width()) {
+            offset.left = offset.left + iconWidth - menuWidth;
+        }
+        pageMenu.toggle();
+        pageMenu.offset(offset);
+        return false;
+    });
+
+    function toggleTrsEditor() {
+        if(trsEditor.is(":hidden")) {
+            Cookies.set("trsEditorHidden", false);
+            var offset = Cookies.getJSON("trsEditorOffset");
+            if(offset.top >= $(window).height()) {
+                offset.top -= trsEditor.height();
+            }
+            trsEditor.show().offset(offset);
+            trsEditor.width(Cookies.get("trsEditorWidth"));
+            trsText.outerWidth(trsTextWrapper.width());
+            toggleTrsEditorMenu.text("关闭翻译框 (Shift + D)");
+        } else {
+            Cookies.set("trsEditorOffset", trsEditor.offset());
+            Cookies.set("trsEditorHidden", true);
+            trsEditor.hide();
+            toggleTrsEditorMenu.text("打开翻译框 (Shift + D)");
+        }
+    }
+
+    function registerKeys() {
+        $(window).keypress(function(e) {
+            if(e.target.id == trsText.attr("id")) {
+                if(e.key === "Enter") {
+                    submitTranslation();
+                    return false;
+                }
+                return;
+            }
+            if(e.shiftKey) {
+                switch (e.key) {
+                    case "d":
+                    case "D":
+                        toggleTrsEditor();
+                        break;
+                    case "f":
+                    case "F":
+                        locateSentence();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
+    }
+    
+    isolateTags.click(function () {
+        function isolate(src) {
+            var texts = '';
+            var tags = '';
+            var len = src.length - 4; //<t0></t0>
+            var i, j;
+            for(i = 0; i < len; i++) {
+                if(src[i] === '<' && src[i+1] === 't' && $.isNumeric(src[i+2])) {
+                    j = i + 3;
+                    while(j < len && $.isNumeric(src[j])) {
+                        j += 1;
+                    }
+                    if(src[j] === '>') {
+                        tags += src.substring(i, j + 1);
+                        i = j;
+                    } else {
+                        texts += src.substring(i, j + 1);
+                        i = j;
+                    }
+                    } else if (src[i] === '<' && src[i+1] === '/' && src[i+2] === 't' && $.isNumeric(src[i+3])) {
+                        j = i + 4;
+                        while(j < len && $.isNumeric(src[j])) {
+                            j += 1;
+                        }
+                        if(src[j] === '>') {
+                            tags += src.substring(i, j + 1);
+                            i = j;
+                        } else {
+                            texts += src.substring(i, j + 1);
+                            i = j;
+                        }
+                    } else {
+                        texts += src[i]
+                    }
+                }
+            texts += src.substring(i, src.length);
+            return [texts, tags];
+        }
+        var srcTextVal = srcText.text();
+        var trsTextVal = trsText.val();
+        var isolatedSrcText = isolate(srcTextVal);
+        var isolatedTrsText = isolate(trsTextVal);
+        srcText.text(isolatedSrcText.join(' '));
+        trsText.val(isolatedTrsText.join(' '));
+        machineTranslate.attr("plain_length", isolatedSrcText[0].length);
+    });
+
+    initialTrs.click(function () {
+        var trsElem = $(getElementByIdOrClass(trsDocument, selectedSid));
+        trsText.removeClass("has-error").val(yiutil.normalizeTranslationTag(trsElem.html()));
+        trsMsg.hide().removeClass("has-error");
+    });
+
+
+    function handleHrefHover(){
+        $(trsDocument.getElementsByTagName("a")).mouseover(function(e){
+            if(trsEditor.is(":hidden")) {
+                return;
+            }
+            var elem = $(e.target);
+            var sid = getElementSid(elem);
+            if(!sid) {
+                sid = getElementSid($(this));
+            }
+            if(!sid) {
+                sid = getElementSid(elem.parents('.yiyi-st').first());
+            }
+            if(elem.text().trim() == $(getElementByIdOrClass(trsDocument, sid)).text().trim()) {
+                var offset = {'top': elem.offset().top, 'left': e.pageX};
+                offset.top = offset.top + elem.outerHeight() - $(trsWindow).scrollTop();
+                if (offset.top + hrefPop.outerHeight() > $(window).height()) {
+                    offset.top = offset.top - elem.outerHeight() - hrefPop.outerHeight();
+                }
+                offset.left = offset.left + $(trsIframe).offset().left;
+                if (offset.left + hrefPop.outerWidth() > $(window).width()) {
+                    offset.left = $(window).width() - hrefPop.outerWidth() - 30;
+                }
+                clearTimeout(hrefHiddenTimeoutID);
+                hrefShownTimeoutID = setTimeout(function () {
+                    hrefPopLink.attr("sid", sid);
+                    hrefPop.offset(offset);
+                }, 1000)
+            }
+        }).mouseout(function() {
+            clearTimeout(hrefShownTimeoutID);
+            hrefHiddenTimeoutID = setTimeout(function () {
+                hrefPop.offset(hiddenOffset);
+            }, 1000);
+        });
+    }
+
+    hrefPop.hover(
+        function () {
+            clearTimeout(hrefHiddenTimeoutID);
+            var sid = hrefPopLink.attr("sid");
+            var trsElem = getElementByIdOrClass(trsDocument, sid);
+            var srcElem = getElementByIdOrClass(srcDocument, sid);
+            if(trsElem && srcElem) {
+                trsElem = $(trsElem);
+                srcElem = $(srcElem);
+                getElementStyle(trsElem);
+                if(sid === selectedSid) {
+                    srcElem.css(clickStyle);
+                    trsElem.css(clickStyle);
+
+                } else {
+                    srcElem.css(hoverStyle);
+                    trsElem.css(hoverStyle);
+                }
+            }
+        },
+        function () {
+            var sid = hrefPopLink.attr("sid");
+            var trsElem = getElementByIdOrClass(trsDocument, sid);
+            var srcElem = getElementByIdOrClass(srcDocument, sid);
+            if(trsElem && srcElem) {
+                trsElem = $(trsElem);
+                srcElem = $(srcElem);
+                srcElem.css(elemCss);
+                trsElem.css(elemCss);
+            }
+            hrefHiddenTimeoutID = setTimeout(function() {
+                hrefPop.offset(hiddenOffset);
+            }, 1000);
+        }
+    );
+
+    hrefPopLink.click(function () {
+        selectedSid = hrefPopLink.attr("sid");
+        machineTranslate.attr("plain_length", 0);
+        if(selectedSid) {
+            var trsElem = $(getElementByIdOrClass(trsDocument, selectedSid));
+            var srcElem = $(getElementByIdOrClass(srcDocument, selectedSid));
+            srcElem.css(clickStyle);
+            trsElem.css(clickStyle);
+            srcText.text(yiutil.normalizeOriginalTag(srcElem.html()));
+            trsText.removeClass("has-error").val(yiutil.normalizeTranslationTag(trsElem.html()));
+            trsMsg.hide().removeClass("has-error");
+            history.attr("href", historyHref + "/" + selectedSid.substr(5));
+            getHistory(selectedSid);
+            trsMenu.hide();
+        }
+    });
+
+    function handleTrsHrefClick(){
+         $(trsDocument.getElementsByTagName("a")).click(function(e){
+             var target = e.currentTarget;
+             console.log(target.href);
+             console.log(target.hash);
+             console.log(trsWindow.location.href);
+             if(target.href.startsWith('http') && target.href.split('#')[0] !== trsWindow.location.href.split('#')[0])
+             {
+                 if(target.host === trsWindow.location.host) {
+                     var targetHref = target.href.split('/');
+                     var windowHref = window.location.href.split('/');
+                     if(targetHref[3] == 'sources' || targetHref[3] == 'documents') {
+                         targetHref[3] = windowHref[3];
+                     }
+                     window.location.href = targetHref.join("/");
+                     return false;
+                 } else {
+                     if(target.href) {
+                         window.open(target.href);
+                         hrefPop.offset(hiddenOffset);
+                         return false;
+                     }
+                 }
+             }
+             hrefPop.offset(hiddenOffset);
+        });
+    }
+
+    function handleSrcHrefClick(){
+        $(srcDocument.getElementsByTagName("a")).click(function(e){
+            var target = e.currentTarget;
+            console.log(target.href);
+            console.log(target.hash);
+            console.log(srcWindow.location.href);
+            if(target.href.startsWith('http') && target.href.split('#')[0] !== srcWindow.location.href.split('#')[0])
+            {
+                if(target.host === srcWindow.location.host) {
+                    var targetHref = target.href.split('/');
+                    var windowHref = window.location.href.split('/');
+                    if(targetHref[3] == 'sources' || targetHref[3] == 'documents') {
+                        targetHref[3] = windowHref[3];
+                    }
+                    window.location.href = targetHref.join("/");
+                    return false;
+                } else {
+                    if(target.href) {
+                        window.open(target.href);
+                        hrefPop.offset(hiddenOffset);
+                        return false;
+                    }
+                }
+            }
+            hrefPop.offset(hiddenOffset);
+        });
+    }
+
+    function locateSentence() {
+        if(selectedSid) {
+            var trsElem = $(getElementByIdOrClass(trsDocument, selectedSid));
+            var srcElem = $(getElementByIdOrClass(srcDocument, selectedSid));
+            if (srcElem) {
+                srcElem.fadeOut().fadeIn().fadeOut().fadeIn();
+            }
+            if (trsElem) {
+                trsElem.fadeOut().fadeIn().fadeOut().fadeIn();
+            }
+            var offset = $(trsElem).offset();
+            $(trsWindow).scrollTop(offset.top - 100);
+        }
+    }
+
+    function getRelativePath(path) {
+        var level = -3;
+        var relative_path;
+        for(var i = 0; i < path.length; i++) {
+            if(path[i] == '/') {
+                level += 1;
+            }
+        }
+        if(level == 0) {
+            relative_path = '.';
+        } else {
+            relative_path = '..';
+            for(i = 1; i < level; i++) {
+                relative_path += '/..';
+            }
+        }
+        return relative_path
+    }
+
+    function absPathToRelative(doc) {
+        var relativePath = getRelativePath(doc.location.pathname);
+        var scriptTags = doc.getElementsByTagName('script');
+        var tag, src, href, newTag;
+        var len = scriptTags.length;
+        for(var i = 0; i < len; i++) {
+            tag = $(scriptTags[i]);
+            src = tag.attr("src");
+            if(src) {
+                src = src.trim();
+                if(src.startsWith('/') && !src.startsWith('//')) {
+                    src = relativePath + src;
+                    newTag = $(doc.createElement('script'));
+                    newTag.attr('src', src);
+                    tag.after(newTag);
+                    tag.remove();
+                }
+            }
+        }
+        var linkTags = doc.getElementsByTagName('link');
+        for(i = 0; i < linkTags.length; i ++) {
+            tag = $(linkTags[i]);
+            href = tag.attr("href");
+            if(href) {
+                href = href.trim();
+                if(href.startsWith('/') && !href.startsWith('//'))
+                {
+                    href = relativePath + href;
+                    newTag = $(doc.createElement('link'));
+                    newTag.attr('href', href);
+                    newTag.attr('rel',tag.attr('rel'));
+                    newTag.attr('type', tag.attr('type'));
+                    tag.after(newTag);
+                    tag.remove();
+                }
+            }
+        }
+    }
+
+    function getRandomDashangStrings() {
+        var  dashangStrings = ["点都点开了，给点赏钱再关掉呗~", "您的打赏是对本站最大的支持", "土豪，给点赏钱呗~"];
+        var min = 0;
+        var max = dashangStrings.length;
+        var rand = Math.floor(Math.random() * (max - min + 1)) + min;
+        return dashangStrings[rand];
+    }
+
+    var daShangDlg = $("#dashang").dialog({
+        autoOpen: false,
+        width: 500,
+        modal: true,
+        buttons: {
+            "关闭": function() {
+               daShangDlg.dialog("close");
+            }
+        },
+        close: function() {
+        }
+    });
+});

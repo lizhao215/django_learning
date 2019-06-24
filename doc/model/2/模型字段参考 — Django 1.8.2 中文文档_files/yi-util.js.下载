@@ -1,0 +1,275 @@
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+    typeof define === 'function' && define.amd ? define(factory) :
+    global.yiutil = factory()
+}(this, function(){ 'use strict';
+  var yiutil = {};
+  
+  function getAttributeNames(node){
+    var rv = [];
+    var attrs = node.attributes;
+    for (var index = 0; index < attrs.length; ++index) {
+      rv.push(attrs[index].nodeName);
+    }
+    rv.sort();
+    return rv;
+  }
+  
+  function equivElments(elm1, elm2) {
+    if(elm1 == undefined && elm2 == undefined) {
+      return true;
+    }
+    if (elm1 != undefined && elm2 == undefined || elm1 == undefined && elm2 != undefined){
+      return false;
+    }
+    var attrs1 = getAttributeNames(elm1);
+    var attrs2 = getAttributeNames(elm2);
+    if (attrs1.join(",") !== attrs2.join(",")) {
+      return false;
+    }
+
+    for (var index = 0; index < attrs1.length; ++index) {
+      var name = attrs1[index];
+      if (elm1.getAttribute(name) !== elm2.getAttribute(name)) {
+        return false;
+      }
+    }
+    var node1; var node2;
+    for(node1 = elm1.firstElementChild, node2 = elm2.firstElementChild; 
+             node1 && node2;
+                 node1 = node1.nextElementSibling, node2 = node2.nextElementSibling) {
+      if (node1.nodeType !== node2.nodeType) {
+        return false;
+      }
+      if (node1.nodeType === 1) {
+        if (!equivElments(node1, node2)) {
+          return false;
+        }
+      }
+    }
+    if (node1 || node2) {
+      return false;
+    }
+    return true;
+  }
+  
+  yiutil.validateHTML = function (html){ 
+    var elem = document.createElement('div'); 
+    elem.innerHTML = html; 
+    return (elem.innerHTML === html);
+  };
+  
+  yiutil.joinUrl = function (baseurl, url){
+    if(url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://')){
+      return url;
+    }
+    baseurl = baseurl.split('/');
+    url = url.split('/');
+    var newurl = [];
+    for (var i = 0, len = baseurl.length - 1; i < len; i++) {
+      if (baseurl[i] == '..') {
+        newurl.pop();
+      } else if (baseurl[i] == '.') {
+        continue;
+      } else {
+        newurl.push(baseurl[i]);
+      }
+    }
+    for (i = 0, len = url.length; i < len; i++) {
+      if (url[i] == '..') {
+        newurl.pop();
+      } else if (url[i] == '.') {
+        continue;
+      } else {
+        newurl.push(url[i]);
+      }
+    }
+    return newurl.join('/');
+  };
+  
+  var originalElements = {};
+  var parentTag = {};
+  var singleElements = {};
+  yiutil.normalizeOriginalTag = function (text){
+    originalElements = {};
+    parentTag = {};
+    singleElements = {};
+    var tagID = 0;
+    var element = document.createElement("p");
+    element.setAttribute('id', 'normalizeOriginalTag');
+    element.innerHTML = text;
+    normalize(element);
+    return element.innerHTML;
+    function normalize(element) {
+      var children = element.children;
+      var length = children.length;
+      for(var i=0; i < length; i++) {
+        var newElementName = 'T' + tagID;
+        var child = children[i];
+        if(!child) {
+            console.log(element, text);
+            continue;
+        }
+        var newElement = document.createElement(newElementName);
+        newElement.innerHTML = child.innerHTML;
+        element.replaceChild(newElement, child);
+        originalElements[newElementName] = child;
+        parentTag[newElementName] = element.tagName;
+        tagID++;
+        normalize(newElement);
+        if(newElement.textContent.trim() == element.textContent.trim()) {
+          if(element.getAttribute('id') !=  'normalizeOriginalTag') {
+            singleElements[element.nodeName] = newElement;
+            element.innerHTML = newElement.innerHTML;
+          }
+        }
+      }
+    }
+  };
+  
+  yiutil.normalizeTranslationTag = function (text){
+    var element = document.createElement("p");
+    element.setAttribute('id', 'normalizeTranslationTag');
+    var normalizedTag = [];
+    element.innerHTML = text;
+    normalize(element);
+    return element.innerHTML;
+    function normalize(element) {
+      var children = element.children;
+      var length = children.length;
+      for(var i=0; i < length; i++) {
+        var child = children[i];
+        if(!child) {
+            console.log(element, text);
+            continue;
+        }
+        for(var tagID in originalElements){
+          if(normalizedTag.indexOf(tagID) < 0 && 
+             equivElments(child, originalElements[tagID]) &&
+             element.tagName == parentTag[tagID]){
+            var newElementName = tagID;
+            normalizedTag.push(tagID);
+            break;
+          }
+        }
+        var newElement = document.createElement(newElementName);
+        newElement.innerHTML = child.innerHTML.trim();
+        element.replaceChild(newElement, child);
+        normalize(newElement);
+        if(newElement.textContent.trim() == element.textContent.trim()) {
+          if(element.getAttribute('id') !=  'normalizeTranslationTag') {
+            element.innerHTML = newElement.innerHTML;
+          }
+        }
+      }
+    }
+  }
+  
+  yiutil.recoverTag = function(text) {
+    console.log(originalElements);
+    var element = document.createElement("p");
+    element.innerHTML = text;
+    recoverChildTag(element);
+    recover(element);
+    return element.innerHTML;
+    function recoverChildTag(element) {
+
+      if(singleElements[element.nodeName]) {
+        var sc = singleElements[element.nodeName];
+        sc.innerHTML = element.innerHTML;
+        element.textContent = "";
+        element.appendChild(sc);
+      }
+      var children = element.children;
+      for (var i=0; i < children.length; i++) {
+        var child = children[i];
+        recoverChildTag(child);
+      }
+    }
+    function recover(element){
+      if(singleElements[element.nodeName]) {
+        element.textContent = "";
+        element.appendChild(singleElements[element.nodeName]);
+      }
+      var children = element.children;
+      for (var i=0; i < children.length; i++) {
+        var child = children[i];
+        var newElement = originalElements[child.nodeName];
+        if(newElement) {
+          if(newElement.tagName.toLowerCase() == 'select') {
+            // for select tags, it's innerHTML can only be option tags, otherwise the html tag will be dropped
+            var tmpElement =  document.createElement("p");
+            tmpElement.innerHTML = child.innerHTML;
+            recover(tmpElement);
+            newElement.innerHTML = tmpElement.innerHTML;
+            element.replaceChild(newElement, child);
+          } else {
+            newElement.innerHTML = child.innerHTML;
+            element.replaceChild(newElement, child);
+            recover(newElement);
+          }
+        }
+      }
+    }
+  }
+   
+  yiutil.lcs = function(x, y){
+    var LCS = [];
+    var z = lcsLength(x, y);
+    _lcs(z, x, y, x.length, y.length);
+    return LCS;
+    
+    function lcsLength(x, y){
+      var z = new Array(x.length + 1);
+      for(var i = 0; i < z.length; i++){
+        z[i] = new Array(y.length + 1);
+      }
+      for(var i = 0; i <= x.length; i++){
+        for (var j = 0; j <= y.length; j++){
+          z[i][j] = 0;
+        }
+      }
+      for(var i = 0; i < x.length; i++){
+        for (var j = 0; j < y.length; j++){
+          if(x[i].toLowerCase() === y[j].toLowerCase()){
+            z[i+1][j+1] = z[i][j] + 1;
+          }
+          else if(z[i+1][j] > z[i][j+1]){
+            z[i+1][j+1] = z[i+1][j];
+          }
+          else{
+            z[i+1][j+1] = z[i][j+1];
+          }
+        }
+      }
+      return z;
+    }
+    
+    function _lcs(z, x, y, i, j) {
+      if(i === 0 || j === 0)
+          return;
+      if(x[i-1].toLowerCase() === y[j-1].toLowerCase()) {
+          _lcs(z, x, y, i-1, j-1);
+          LCS.push(i-1);
+      }else if(z[i][j-1] > z[i-1][j]) {
+          _lcs(z, x, y, i, j-1);
+      }else{
+          _lcs(z, x, y, i-1, j);
+      }
+    }
+  }
+
+  yiutil.replaceTag = function(txt){
+    var tagsToReplace = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;'
+    };
+
+    return txt.replace(/[&<>]/g, function(tag){
+      return tagsToReplace[tag] || tag;
+    });
+  }
+  
+  return yiutil;
+}));

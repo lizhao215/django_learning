@@ -1,0 +1,100 @@
+$(function() {
+
+    var dgLogin = $("#dgLogin").dialog({
+        autoOpen: false,
+        height: 300,
+        width: 400,
+        modal: true,
+        buttons: {
+            "登录": login,
+            "关闭": function() {
+               dgLogin.dialog("close");
+            }
+        },
+        close: function() {
+        }
+    });
+
+    var dgSignup = $("#dgSignup").dialog({
+        autoOpen: false,
+        height: 400,
+        width: 400,
+        modal: true,
+        buttons: {
+            "注册": signp,
+            "关闭": function() {
+               dgSignup.dialog("close");
+            }
+        },
+        close: function() {
+        }
+    });
+    
+    function login() {
+        $.ajax({
+            method: "POST",
+            url: "/accounts/login/",
+            data: dgLogin.find("form").serialize(),
+            dataType: 'json',
+            success: function (data) {
+                var usernameElm = $('<a id="user" target="_blank"></a>');
+                usernameElm.text(data.username).attr("href", "/accounts/documents/");
+                $("#signup").remove();
+                $("#login").remove();
+                $("#home").after(usernameElm);
+                dgLogin.dialog("close");
+            },
+            error: function(jqXHR, textStatus, errorThrown){
+                var err = $.parseJSON(jqXHR.responseText);
+                for(var key in err) {
+                    dgLogin.find(".help-text").addClass("has-error").text(err[key][0]);
+                }
+            }
+        });
+        return false;
+    }
+
+    function signp() {
+        $.ajax({
+            method: "POST",
+            url: "/accounts/signup/",
+            data: dgSignup.find("form").serialize(),
+            dataType: 'json',
+            success: function (data) {
+                var usernameElm = $('<a id="user" target="_blank"></a>');
+                usernameElm.text(data.username).attr("href", "/accounts/documents/");
+                $("#signup").remove();
+                $("#login").remove();
+                $("#home").after(usernameElm);
+                dgSignup.dialog("close");
+            },
+            error: function(jqXHR, textStatus, errorThrown){
+                var err = $.parseJSON(jqXHR.responseText);
+                for(var key in err) {
+                    dgSignup.find(".help-text").addClass("has-error").text(err[key][0]);
+                }
+            }
+        });
+        return false;
+    }
+
+    $("#login").click(function() {
+        dgLogin.find(".has-error").removeClass("has-error");
+        dgLogin.dialog("open");
+    });
+
+    $("#signup").click(function() {
+        dgSignup.find(".has-error").removeClass("has-error");
+        dgSignup.dialog("open");
+    });
+
+    dgLogin.find(":input").focusin(function(){
+        dgLogin.find(".has-error").removeClass("has-error");
+        dgLogin.find(".help-text").text("输入用户名、密码：");
+    });
+
+    dgSignup.find(":input").focusin(function(){
+        dgSignup.find(".has-error").removeClass("has-error");
+        dgSignup.find(".help-text").text("注册用户可以上传自己的文档、查询自己的翻译历史等：");
+    });
+});

@@ -1,0 +1,7 @@
+six
+feedparser
+simplejson
+demjson
+jsonlib
+yajl
+ujson

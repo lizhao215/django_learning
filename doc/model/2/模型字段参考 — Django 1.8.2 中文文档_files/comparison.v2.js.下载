@@ -1,0 +1,554 @@
+$(function() {
+
+    var srcIframe = document.getElementById("src-iframe");
+    var srcWindow, srcDocument, srcDocumentHeight, srcElems;
+
+    var trsIframe = document.getElementById("trs-iframe");
+    var trsWindow, trsDocument, trsDocumentHeight, trsElems;
+
+    var srcTrsHeightRatio, trsSrcHeightRatio, srcScrolling, trsScrolling;
+
+    var windowHeight = $(window).height();
+    var windowWidth = $(window).width();
+
+    var srcPanel = $("#src-panel");
+    var trsPanel = $("#trs-panel");
+
+    var isResizing, isSrcPanelHide;
+
+    var hoverStyle = {"background-color": "rgb(201, 215, 241)", "color": "rgb(0, 0, 0)"};
+    var clickStyle = {"background-color": "rgb(255, 255, 176)", "color": "rgb(0, 0, 0)"};
+    var clickSid;
+    var elemCss = {};
+
+    var trsText = $("#trs-text");
+
+    if (!String.prototype.startsWith) {
+        String.prototype.startsWith = function(searchString, position){
+          return this.substr(position || 0, searchString.length) === searchString;
+      };
+    }
+
+    function bubbleIframeMouseMove(iframe){
+        var existingOnMouseMove = iframe.contentWindow.onmousemove;
+        iframe.contentWindow.onmousemove = function(e){
+            if(existingOnMouseMove) existingOnMouseMove(e);
+            var boundingClientRect = iframe.getBoundingClientRect();
+            var evt;
+            if (typeof window.Event == "function") {
+                evt = new MouseEvent("mousemove", {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    screenX: e.screenX,
+                    screenY: e.screenY,
+                    clientX: e.clientX + boundingClientRect.left,
+                    clientY: e.clientY + boundingClientRect.top,
+                    ctrlKey: e.ctrlKey,
+                    shiftKey: e.shiftKey,
+                    altKey: e.altKey,
+                    metaKey: e.metaKey,
+                    button: e.button
+                });
+            } else {
+                evt = document.createEvent("MouseEvents");
+                evt.initMouseEvent(
+                    "mousemove",
+                    true,
+                    false,
+                    window,
+                    e.detail,
+                    e.screenX,
+                    e.screenY,
+                    e.clientX + boundingClientRect.left,
+                    e.clientY + boundingClientRect.top,
+                    e.ctrlKey,
+                    e.altKey,
+                    e.shiftKey,
+                    e.metaKey,
+                    e.button,
+                    null
+                );
+            }
+            iframe.dispatchEvent(evt);
+        };
+    }
+
+    function bubbleIframeKeyPress(iframe){
+        var existingOnKeyPress = iframe.contentWindow.onkeypress;
+        iframe.contentWindow.onkeypress = function(e){
+            if(existingOnKeyPress) existingOnKeyPress(e);
+            var boundingClientRect = iframe.getBoundingClientRect();
+            var evt;
+            if (typeof window.Event == "function") {
+                evt = new KeyboardEvent("keypress", {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    ctrlKey: e.ctrlKey,
+                    shiftKey: e.shiftKey,
+                    altKey: e.altKey,
+                    metaKey: e.metaKey,
+                    key: e.key,
+                    target: e.target
+                });
+            } else {
+                evt = document.createEvent("KeyboardEvent");
+                var modifiersListArg = "";
+                if(e.shiftKey) {
+                    modifiersListArg += "Shift";
+                }
+                evt.initKeyboardEvent(
+                    "keypress",
+                    true,
+                    false,
+                    window,
+                    e.key,
+                    e.location,
+                    modifiersListArg,
+                    e.locale,
+                    e.repeat
+                );
+            }
+            iframe.dispatchEvent(evt);
+        };
+    }
+
+    function offsetTopCompare (x, y) {
+        var diff = x.offsetTopDocument - y.offsetTopDocument;
+        if (diff < 0)
+            return -1;
+        else if (diff == 0)
+            return 0;
+        else
+            return 1;
+    }
+
+    function resortOffsetTop(elems) {
+        for (var i = 0; i < elems.length; i++) {
+            elems[i].offsetTopDocument = $(elems[i]).offset().top;
+        }
+        return elems.sort(offsetTopCompare);
+    }
+
+    function getTopElem(elems, win) {
+        var start = 0;
+        var end = elems.length - 1;
+        var index = Math.floor((start + end) / 2);
+        while (index > start && index < end) {
+            if (elems[index].offsetTopDocument - $(win).scrollTop() < 0) {
+                start = index;
+            } else {
+                end = index;
+            }
+            index = Math.ceil((start + end) / 2);
+        }
+        // bypass elements whose offset changes
+        while(index < elems.length - 1) {
+            if(elems[index].offsetTopDocument != $(elems[index]).offset().top) {
+                index += 1;
+            } else {
+                break;
+            }
+        }
+        return elems[index];
+    }
+
+    function getElementByIdOrClass(doc, sid) {
+        var elem = doc.getElementById(sid);
+        if(elem) {
+            return elem;
+        } else {
+            var elems = doc.getElementsByClassName(sid);
+            if(elems) {
+                return elems[0];
+            } else {
+                return null;
+            }
+        }
+    }
+
+    function getElementSid(elem) {
+        var sid = elem.attr("id");
+        if(sid && sid.startsWith("yiyi-")) {
+            return sid;
+        } else {
+            var classes = elem.attr("class");
+             if(classes) {
+                 classes = classes.split(" ");
+                 for(var i = 0; i < classes.length; i++) {
+                     if(classes[i].startsWith("yiyi-")) {
+                         return classes[i];
+                     }
+                 }
+             }
+             return null;
+        }
+    }
+
+    function getElementStyle(elem) {
+        elemCss = {'background-color': '', 'color': ''};
+        var style = elem.attr("style");
+        if(style) {
+            style = style.split(';');
+            for(var i = 0; i < style.length; i++) {
+                var item = style[i].trim().split(':');
+                if(item.length == 2) {
+                    if(item[0].toLowerCase() == 'background-color') {
+                        elemCss['background-color'] = item[1].trim();
+                    } else if (item[0].toLowerCase() == 'color') {
+                        elemCss['color'] = item[1].trim();
+                    }
+                }
+            }
+        }
+        if(elemCss['background-color'] == hoverStyle['background-color'] &&
+                elemCss['color'] == hoverStyle['color'] ||
+                elemCss['background-color'] == clickStyle['background-color'] &&
+                elemCss['color'] == clickStyle['color']) {
+            elemCss = {'background-color': '', 'color': ''};
+        }
+    }
+
+    $(srcIframe).load(function () {
+        console.log("srcIframe load");
+        srcWindow = srcIframe.contentWindow;
+        srcDocument = srcIframe.contentDocument;
+        srcDocumentHeight = $(srcDocument).height();
+        if(trsDocumentHeight) {
+            srcTrsHeightRatio = srcDocumentHeight / trsDocumentHeight;
+            trsSrcHeightRatio = trsDocumentHeight / srcDocumentHeight;
+        }
+        
+        srcElems = $(srcDocument.getElementsByClassName("yiyi-st")).toArray();
+        srcElems = resortOffsetTop(srcElems);
+
+        $(srcDocument).delegate(".yiyi-st", "mouseenter", function(){
+            if(isResizing || srcScrolling || trsScrolling) {
+                return;
+            }
+            var srcElem = $(this);
+            var sid = getElementSid(srcElem);
+            var trsElem = $(getElementByIdOrClass(trsDocument, sid));
+            getElementStyle($(this));
+            if(sid === clickSid) {
+                trsElem.css(clickStyle);
+                srcElem.css(clickStyle);
+            } else {
+                trsElem.css(hoverStyle);
+                srcElem.css(hoverStyle);
+            }
+        });
+        
+         $(srcDocument).delegate(".yiyi-st", "mouseleave", function () {
+                var srcElem = $(this);
+                var sid = getElementSid(srcElem);
+                var trsElem = $(getElementByIdOrClass(trsDocument, sid));
+                srcElem.css(elemCss);
+                trsElem.css(elemCss);
+            }
+        );
+
+        $(srcDocument).delegate(".yiyi-st", "click", function() {
+            var srcElem = $(this);
+            var sid = getElementSid(srcElem);
+            clickSid = sid;
+            var trsElem = getElementByIdOrClass(trsDocument, sid);
+            if(trsElem) {
+                trsElem = $(trsElem);
+            } else {
+                return;
+            }
+            trsElem.css(clickStyle);
+            srcElem.css(clickStyle);
+            var trsScrollTop = trsElem.offset().top - (srcElem.offset().top - $(srcWindow).scrollTop());
+            // $(trsWindow).height() is not correct in NLTK document��use innerHeight instead
+            if(trsScrollTop != $(trsWindow).scrollTop() && trsScrollTop > 0 &&
+                            trsScrollTop < trsDocumentHeight - trsWindow.innerHeight) {
+                srcScrolling = true;
+                $(trsWindow).scrollTop(trsScrollTop);
+            } else {
+                srcScrolling = false;
+            }
+        });
+
+        $(srcWindow).scroll(function (e) {
+            if(trsScrolling) {
+                trsScrolling = false;
+                return;
+            }
+            var srcTopElem = getTopElem(srcElems, srcWindow);
+            var srcTopDiff = $(srcWindow).scrollTop() - srcTopElem.offsetTopDocument;
+            var trsScrollTop;
+            if(Math.abs(srcTopDiff) < 100) {
+                var sid = srcTopElem.getAttribute("id");
+                var trsTopElem = getElementByIdOrClass(trsDocument, sid);
+                var trsOffsetTop = $(trsTopElem).offset().top;
+                trsScrollTop = trsOffsetTop + srcTopDiff;
+            } else {
+                trsScrollTop = $(srcWindow).scrollTop() * trsSrcHeightRatio;
+            }
+            if(Math.abs(trsScrollTop - $(trsWindow).scrollTop()) > 1 && trsScrollTop > 0 &&
+                            trsScrollTop < trsDocumentHeight - trsWindow.innerHeight) {
+                srcScrolling = true;
+                $(trsWindow).scrollTop(trsScrollTop);
+            } else {
+                srcScrolling = false;
+            }
+        });
+
+        $(srcWindow).resize(function () {
+            srcDocumentHeight = $(srcDocument).height();
+            trsDocumentHeight = $(trsDocument).height();
+            srcTrsHeightRatio = srcDocumentHeight / trsDocumentHeight;
+            trsSrcHeightRatio = trsDocumentHeight / srcDocumentHeight;
+            srcElems = resortOffsetTop(srcElems);
+        });
+    });
+
+    $(trsIframe).load(function () {
+        console.log("trsIframe load");
+        trsWindow = trsIframe.contentWindow;
+        trsDocument = trsIframe.contentDocument;
+        trsDocumentHeight = $(trsDocument).height();
+        if(srcDocumentHeight) {
+            srcTrsHeightRatio = srcDocumentHeight / trsDocumentHeight;
+            trsSrcHeightRatio = trsDocumentHeight / srcDocumentHeight;
+        }
+        
+        trsElems = $(trsDocument.getElementsByClassName("yiyi-st")).toArray();
+        trsElems = resortOffsetTop(trsElems);
+
+        $(trsDocument).delegate(".yiyi-st", "mouseenter", function(){
+            if(isResizing || srcScrolling || trsScrolling) {
+                return;
+            }
+            var trsElem = $(this);
+            var sid = getElementSid(trsElem);
+            var srcElem = $(getElementByIdOrClass(srcDocument, sid));
+            getElementStyle(trsElem);
+            if(sid === clickSid) {
+                trsElem.css(clickStyle);
+                srcElem.css(clickStyle);
+            } else {
+                trsElem.css(hoverStyle);
+                srcElem.css(hoverStyle);
+            }
+        });
+        $(trsDocument).delegate(".yiyi-st", "mouseleave", function () {
+            if(isResizing) {
+                return;
+            }
+            var trsElem = $(this);
+            var sid = getElementSid(trsElem);
+            var srcElem = $(getElementByIdOrClass(srcDocument, sid));
+            trsElem.css(elemCss);
+            srcElem.css(elemCss);
+        });
+
+        $(trsDocument).delegate(".yiyi-st", "click", function(e) {
+            var trsElem = $(this);
+            var sid = getElementSid(trsElem);
+            clickSid = sid;
+            // scipy_lecture_notes elements will hide after click, set the style does not work
+            // if(trsElem.is(":hidden")) {
+            //     trsElem.css(elemCss);
+            // } else {
+            //     trsElem.css(clickStyle);
+            // }
+            var srcElem = getElementByIdOrClass(srcDocument, sid);
+            if(srcElem) {
+                srcElem = $(srcElem);
+            } else {
+                return;
+            }
+            srcElem.css(clickStyle);
+            trsElem.css(clickStyle);
+            var srcScrollTop = srcElem.offset().top - (trsElem.offset().top - $(trsWindow).scrollTop());
+            if (!isSrcPanelHide && srcScrollTop != $(srcWindow).scrollTop() &&
+                srcScrollTop > 0 && srcScrollTop < srcDocumentHeight - srcWindow.innerHeight) {
+                trsScrolling = true;
+                $(srcWindow).scrollTop(srcScrollTop);
+            } else {
+                trsScrolling = false;
+            }
+        });
+
+        $(trsWindow).scroll(function (e) {
+            if(isSrcPanelHide || srcScrolling) {
+                srcScrolling = false;
+                return;
+            }
+            var trsTopElem = getTopElem(trsElems, trsWindow);
+            var trsTopDiff = $(trsWindow).scrollTop() - trsTopElem.offsetTopDocument;
+            var srcScrollTop;
+            if(Math.abs(trsTopDiff) < 100) {
+                var sid = trsTopElem.getAttribute("id");
+                var srcTopElem = getElementByIdOrClass(srcDocument, sid);
+                var srcOffsetTop = $(srcTopElem).offset().top;
+                srcScrollTop = srcOffsetTop + trsTopDiff;
+            } else {
+                srcScrollTop = $(trsWindow).scrollTop() * srcTrsHeightRatio;
+            }
+            // console.log(srcScrollTop, $(srcWindow).scrollTop(), srcDocumentHeight, srcWindow.innerHeight);
+            // scroll only when src window will really scroll
+            if(Math.abs(srcScrollTop - $(srcWindow).scrollTop()) > 1 && srcScrollTop > 0 &&
+                            srcScrollTop < srcDocumentHeight - srcWindow.innerHeight) {
+                trsScrolling = true;
+                $(srcWindow).scrollTop(srcScrollTop);
+            } else {
+                trsScrolling = false;
+            }
+        });
+
+        $(trsWindow).resize(function () {
+            srcDocumentHeight = $(srcDocument).height();
+            trsDocumentHeight = $(trsDocument).height();
+            srcTrsHeightRatio = srcDocumentHeight / trsDocumentHeight;
+            trsSrcHeightRatio = trsDocumentHeight / srcDocumentHeight;
+            trsElems = resortOffsetTop(trsElems);
+        });
+    });
+
+    $(window).resize(function () {
+        windowHeight = $(window).height();
+        windowWidth = $(window).width();
+        if(isSrcPanelHide){
+            trsPanel.outerWidth(windowWidth);
+            trsPanel.outerHeight(windowHeight);
+        } else {
+            if(Cookies.get("isVerticalPanel") === "true"){
+                trsPanel.outerWidth(windowWidth - srcPanel.outerWidth());
+            } else {
+                trsPanel.outerHeight(windowHeight - srcPanel.outerHeight());
+            }
+        }
+
+    });
+
+    function horizontalPanel() {
+        srcPanel.show();
+        srcPanel.removeClass("panel-v").removeClass("src-panel-v").addClass("panel-h").addClass("src-panel-h");
+        trsPanel.removeClass("panel-v").addClass("panel-h");
+
+        srcPanel.resizable({
+            handles: "s",
+            resize: function (event, ui) {
+                trsPanel.outerHeight(windowHeight - srcPanel.outerHeight());
+            },
+            start: function (event, ui) {
+                isResizing = true;
+            },
+            stop: function (event, ui) {
+                isResizing = false;
+            }
+        });
+
+        srcPanel.css("width", "");
+        trsPanel.css("width", "");
+        srcPanel.height(windowHeight / 2 - 20);
+        trsPanel.outerHeight(windowHeight - srcPanel.outerHeight());
+        srcPanel.children(".ui-resizable-s").text('. . . . . .');
+        Cookies.set("isVerticalPanel", false);
+        isSrcPanelHide = false;
+        Cookies.set("isSrcPanelHide", false);
+    }
+
+    function verticalPanel() {
+        srcPanel.show();
+        srcPanel.removeClass("panel-h").removeClass("src-panel-h").addClass("panel-v").addClass("src-panel-v");
+        trsPanel.removeClass("panel-h").addClass("panel-v");
+
+        srcPanel.resizable({
+            handles: "e",
+            resize: function(event, ui){
+                trsPanel.outerWidth(windowWidth - srcPanel.outerWidth());
+            },
+            start: function (event, ui) {
+                isResizing = true;
+            },
+            stop: function (event, ui) {
+                isResizing = false;
+            }
+        });
+
+        srcPanel.css("height", "");
+        trsPanel.css("height", "");
+        srcPanel.width(windowWidth / 2 - 50);
+        trsPanel.outerWidth(windowWidth - srcPanel.outerWidth());
+        srcPanel.children(".ui-resizable-e").html('<span class="splitter-v">. . . . . . </span>');
+        Cookies.set("isVerticalPanel", true);
+        isSrcPanelHide = false;
+        Cookies.set("isSrcPanelHide", false);
+    }
+
+    function hideSrcPanel() {
+        trsPanel.outerWidth(windowWidth);
+        trsPanel.outerHeight(windowHeight);
+        srcPanel.hide();
+        isSrcPanelHide = true;
+        Cookies.set("isSrcPanelHide", true);
+    }
+
+    function showSrcPanel() {
+        if (Cookies.get("isVerticalPanel") === "true") {
+            verticalPanel()
+        } else {
+            horizontalPanel();
+        }
+    }
+
+    function toggleSrcPanel() {
+        if (isSrcPanelHide) {
+            showSrcPanel();
+        } else {
+            hideSrcPanel();
+        }
+    }
+
+    bubbleIframeMouseMove(srcIframe);
+    bubbleIframeMouseMove(trsIframe);
+    bubbleIframeKeyPress(srcIframe);
+    bubbleIframeKeyPress(trsIframe);
+    if(Cookies.get("isSrcPanelHide") === "false") {
+        showSrcPanel();
+    } else {
+        hideSrcPanel();
+    }
+
+    $(window).keypress(function(e) {
+        if(e.target.id == trsText.attr("id")) {
+            return;
+        }
+        if(e.shiftKey) {
+            switch (e.key) {
+                case 'v':
+                case 'V':
+                    verticalPanel();
+                    break;
+                case 'h':
+                case 'H':
+                    horizontalPanel();
+                    break;
+                case 'c':
+                case 'C':
+                    toggleSrcPanel();
+                    break;
+                default:
+                    break;
+            }
+        }
+    });
+
+    $("#comparison").click(function () {
+        toggleSrcPanel();
+    });
+
+    $("#vertical").click(function () {
+        verticalPanel();
+    });
+
+    $("#horizontal").click(function () {
+        horizontalPanel();
+    });
+});
